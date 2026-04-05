@@ -331,6 +331,27 @@ private:
             if (!sObjectMgr->GetCreatureTemplate(entry))
                 continue;
 
+            // Dedup: skip if a companion with this name is already active for this player
+            bool alreadyActive = false;
+            for (uint32 e2 = AMBIENT_ENTRY_MIN; e2 <= AMBIENT_ENTRY_MAX && !alreadyActive; ++e2)
+            {
+                std::list<Creature*> existing;
+                GetCreatureListWithEntryInGrid(existing, player, e2, 150.f);
+                for (Creature* ec : existing)
+                {
+                    if (!ec->IsSummon()) continue;
+                    if (ec->ToTempSummon()->GetSummonerGUID() != player->GetGUID()) continue;
+                    if (!IsAmbientCompanionCreature(ec)) continue;
+                    if (ec->GetName() == name) { alreadyActive = true; break; }
+                }
+            }
+            if (alreadyActive)
+            {
+                TC_LOG_DEBUG("scripts", "AmbientNPC: skipping duplicate companion '%s' for %s",
+                    name.c_str(), player->GetName().c_str());
+                continue;
+            }
+
             Position pos = RandomPositionNear(player);
             TempSummon* s = player->SummonCreature(entry, pos,
                 TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, DESPAWN_TIME_MS);
