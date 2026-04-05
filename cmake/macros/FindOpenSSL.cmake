@@ -91,6 +91,8 @@ IF(WIN32 AND NOT CYGWIN)
       NAMES
         libcrypto${_OPENSSL_MSVC_ARCH_SUFFIX}MDd libeay32MDd libeay32 libcrypto crypto
       PATHS
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MDd
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MD
         ${OPENSSL_ROOT_DIR}/lib/VC
         ${OPENSSL_ROOT_DIR}/lib
     )
@@ -99,6 +101,8 @@ IF(WIN32 AND NOT CYGWIN)
       NAMES
         libcrypto${_OPENSSL_MSVC_ARCH_SUFFIX}MD libeay32MD libeay32 libcrypto crypto
       PATHS
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MD
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MDd
         ${OPENSSL_ROOT_DIR}/lib/VC
         ${OPENSSL_ROOT_DIR}/lib
     )
@@ -107,6 +111,8 @@ IF(WIN32 AND NOT CYGWIN)
       NAMES
         libssl${_OPENSSL_MSVC_ARCH_SUFFIX}MDd ssleay32MDd ssleay32 ssl libssl
       PATHS
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MDd
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MD
         ${OPENSSL_ROOT_DIR}/lib/VC
         ${OPENSSL_ROOT_DIR}/lib
     )
@@ -115,6 +121,8 @@ IF(WIN32 AND NOT CYGWIN)
       NAMES
         libssl${_OPENSSL_MSVC_ARCH_SUFFIX}MD ssleay32MD ssleay32 ssl libssl
       PATHS
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MD
+        ${OPENSSL_ROOT_DIR}/lib/VC/x64/MDd
         ${OPENSSL_ROOT_DIR}/lib/VC
         ${OPENSSL_ROOT_DIR}/lib
     )

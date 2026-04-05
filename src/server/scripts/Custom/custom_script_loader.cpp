@@ -20,6 +20,7 @@ void AddSC_custom_npcs();
 void AddSC_npc_adventurer_bot();
 void AddSC_npc_class_bot();
 void AddSC_npc_ambient_world();
+void AddSC_npc_ambient_pvp();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
@@ -29,4 +30,5 @@ void AddCustomScripts()
     AddSC_npc_adventurer_bot();
     AddSC_npc_class_bot();
     AddSC_npc_ambient_world();
+    AddSC_npc_ambient_pvp();
 }

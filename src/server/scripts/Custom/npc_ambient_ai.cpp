@@ -49,7 +49,8 @@ struct npc_ambient_aiAI : public ScriptedAI
         _formAngle(float(M_PI)),
         _leashWhisperTimer(0),
         _workEmoteTimer(0),
-        _workObjectType(0)
+        _workObjectType(0),
+        _pvpScanTimer(0)
     {
         me->SetReactState(REACT_PASSIVE);
 
@@ -184,6 +185,31 @@ struct npc_ambient_aiAI : public ScriptedAI
                 Reset();
                 return;
             }
+
+            // PvP sync + assist — keep companion's PvP flag in sync with owner
+            // and auto-assist when enemy players attack the owner
+            if (_pvpScanTimer <= diff)
+            {
+                _pvpScanTimer = 2000;
+                bool ownerPvP = owner->IsPvP();
+                if (me->IsPvP() != ownerPvP)
+                    me->SetPvP(ownerPvP);
+                if (ownerPvP && !me->IsInCombat())
+                {
+                    for (Unit* att : owner->getAttackers())
+                    {
+                        if (!att || !att->IsAlive()) continue;
+                        if (att->GetTypeId() == TYPEID_PLAYER)
+                        {
+                            me->GetMotionMaster()->Clear();
+                            AttackStart(att);
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+                _pvpScanTimer -= diff;
 
             // Companion in combat — fight
             if (me->IsInCombat())
@@ -910,6 +936,7 @@ struct npc_ambient_aiAI : public ScriptedAI
     bool        _isCompanion;
     ObjectGuid  _ownerGuid;
     std::string _myCompanionName;
+    uint32      _pvpScanTimer;
     AmbientRole GetRole() const { return _role; }
 
     void HireCompanion(Player* player, uint32 restoreLevel = 0, uint32 restoreXp = 0, bool isReplica = false)
@@ -1014,6 +1041,7 @@ struct npc_ambient_aiAI : public ScriptedAI
         }
         me->GetMotionMaster()->MoveFollow(player, _formDist, _formAngle);
         me->SetCreatorGUID(player->GetGUID());
+        me->SetPvP(player->IsPvP());
 
         if (!player->GetGroup())
         {
@@ -1094,8 +1122,6 @@ struct npc_ambient_aiAI : public ScriptedAI
             return;
 
         uint32 xpGain = CompanionXpGain((uint32)killed->getLevel());
-
-        owner->GiveXP(xpGain, nullptr);
 
         // N2: Auto-loot — companions generate silver for the player on kills
         {
@@ -1638,11 +1664,23 @@ public:
         switch (action)
         {
             case COMPANION_ACTION_HIRE:
+            {
+                uint32 entry = creature->GetEntry();
+                bool entryAlliance = (entry >= 9500080 && entry <= 9500084);
+                bool entryHorde    = (entry >= 9500085 && entry <= 9500089);
+                if ((entryAlliance && player->GetTeam() == HORDE) ||
+                    (entryHorde    && player->GetTeam() == ALLIANCE))
+                {
+                    ChatHandler(player->GetSession()).PSendSysMessage(
+                        "|cffff4444[Companion]|r This adventurer is not willing to follow someone of your faction.");
+                    break;
+                }
                 ai->HireCompanion(player);
                 ChatHandler(player->GetSession()).PSendSysMessage(
                     "|cff00ff00[Companion]|r %s joins your party!",
                     creature->GetName().c_str());
                 break;
+            }
             case COMPANION_ACTION_DISMISS:
                 ai->DismissCompanion();
                 ChatHandler(player->GetSession()).PSendSysMessage(
@@ -1662,12 +1700,19 @@ public:
                 }
 
                 std::vector<Creature*> availTanks, availHealers, availDps;
+                bool playerAlliance = (player->GetTeam() == ALLIANCE);
                 for (uint32 e = AMBIENT_ENTRY_MIN; e <= AMBIENT_ENTRY_MAX; ++e)
                 {
+                    // Skip wrong-faction entries
+                    bool eAlliance = (e >= 9500080 && e <= 9500084);
+                    bool eHorde    = (e >= 9500085 && e <= 9500089);
+                    if (eAlliance && !playerAlliance) continue;
+                    if (eHorde    &&  playerAlliance) continue;
                     std::list<Creature*> cl;
                     GetCreatureListWithEntryInGrid(cl, player, e, 100.f);
                     for (Creature* c : cl)
                     {
+                        if (!c->IsSummon() || c->ToTempSummon()->GetSummonerGUID() != player->GetGUID()) continue;
                         npc_ambient_aiAI* cai = CAST_AI(npc_ambient_aiAI, c->AI());
                         if (!cai || cai->_isCompanion) continue;
                         AmbientRole r = cai->GetRole();

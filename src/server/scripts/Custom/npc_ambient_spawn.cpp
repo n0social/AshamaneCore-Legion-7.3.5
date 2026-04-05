@@ -29,11 +29,14 @@ uint32 PickAmbientEntry(Player* player)
 uint32 CountNearbyAmbient(Player* player)
 {
     uint32 count = 0;
+    ObjectGuid playerGuid = player->GetGUID();
     for (uint32 e = AMBIENT_ENTRY_MIN; e <= AMBIENT_ENTRY_MAX; ++e)
     {
         std::list<Creature*> nl;
         GetCreatureListWithEntryInGrid(nl, player, e, SEARCH_RADIUS);
-        count += static_cast<uint32>(nl.size());
+        for (Creature* c : nl)
+            if (c && c->IsSummon() && c->ToTempSummon()->GetSummonerGUID() == playerGuid)
+                ++count;
     }
     return count;
 }
@@ -135,6 +138,7 @@ public:
                 for (Creature* c : clist)
                 {
                     if (!c || !c->IsAlive()) continue;
+                    if (!c->IsSummon() || c->ToTempSummon()->GetSummonerGUID() != player->GetGUID()) continue;
                     if (c->GetZoneId() != oldZone) continue;
                     if (IsAmbientCompanionCreature(c)) continue;
                     c->DespawnOrUnsummon(5000);
