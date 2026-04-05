@@ -950,7 +950,6 @@ void WorldSocket::HandleConnectToFailed(WorldPackets::Auth::ConnectToFailed& con
 
 void WorldSocket::HandleEnableEncryptionAck()
 {
-    { FILE* _df=fopen("dbg_enc.txt","a"); if(_df){fprintf(_df,"EncAck type=%d sess=%p\n",(int)_type,(void*)_worldSession);fflush(_df);fclose(_df);} }
     if (_type == CONNECTION_TYPE_REALM)
     {
         _authCrypt.Init(&_sessionKey);

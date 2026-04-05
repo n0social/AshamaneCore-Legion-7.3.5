@@ -485,6 +485,8 @@ void CollectionMgr::LoadAccountItemAppearances(PreparedQueryResult knownAppearan
 
         } while (knownAppearances->NextRow());
 
+        // Resize bitset to hold exactly the loaded blocks before importing
+        _appearances->resize(blocks.size() * boost::dynamic_bitset<uint32>::bits_per_block);
         boost::from_block_range(blocks.begin(), blocks.end(), *_appearances);
     }
 
@@ -510,7 +512,11 @@ void CollectionMgr::LoadAccountItemAppearances(PreparedQueryResult knownAppearan
     for (uint32 hiddenItem : hiddenAppearanceItems)
     {
         ItemModifiedAppearanceEntry const* hiddenAppearance = sDB2Manager.GetItemModifiedAppearance(hiddenItem, 0);
-        ASSERT(hiddenAppearance);
+        if (!hiddenAppearance)
+        {
+            TC_LOG_WARN("server.loading", "CollectionMgr::LoadAccountItemAppearances: ItemModifiedAppearanceEntry not found for hidden item %u (DB2 data missing) - skipping", hiddenItem);
+            continue;
+        }
         if (_appearances->size() <= hiddenAppearance->ID)
             _appearances->resize(hiddenAppearance->ID + 1);
 

@@ -17,10 +17,16 @@
 
 // This is where scripts' loading functions should be declared:
 void AddSC_custom_npcs();
+void AddSC_npc_adventurer_bot();
+void AddSC_npc_class_bot();
+void AddSC_npc_ambient_world();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
 void AddCustomScripts()
 {
     AddSC_custom_npcs();
+    AddSC_npc_adventurer_bot();
+    AddSC_npc_class_bot();
+    AddSC_npc_ambient_world();
 }

@@ -18,7 +18,31 @@ if(NOT _OPENSSL_VERSION)
   set(_OPENSSL_VERSION "3.0.0")
 endif()
 
-find_package(OpenSSL REQUIRED)
+# OpenSSL 3.x: try find_package first; if it fails (e.g. non-standard install
+# layout on Windows with VC libs), fall back to manual path detection.
+# You can override OPENSSL_ROOT_DIR on the CMake command line:
+#   cmake -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64" ...
+if(NOT OPENSSL_ROOT_DIR AND WIN32)
+  # Default Windows installer path for Win64 OpenSSL from slproweb.com
+  set(OPENSSL_ROOT_DIR "C:/Program Files/OpenSSL-Win64" CACHE PATH "OpenSSL root directory")
+endif()
+
+find_package(OpenSSL QUIET)
+
+if(NOT OPENSSL_FOUND)
+  # find_package failed — manually resolve VC-layout lib paths
+  if(NOT OPENSSL_ROOT_DIR)
+    message(FATAL_ERROR "OpenSSL not found. Set OPENSSL_ROOT_DIR to your OpenSSL install path.")
+  endif()
+  set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include" CACHE PATH "" FORCE)
+  set(OPENSSL_SSL_LIBRARY "${OPENSSL_ROOT_DIR}/lib/VC/x64/MD/libssl.lib" CACHE FILEPATH "" FORCE)
+  set(OPENSSL_CRYPTO_LIBRARY "${OPENSSL_ROOT_DIR}/lib/VC/x64/MD/libcrypto.lib" CACHE FILEPATH "" FORCE)
+  set(OPENSSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY})
+  set(OPENSSL_FOUND TRUE CACHE BOOL "" FORCE)
+  message(STATUS "OpenSSL manually configured from: ${OPENSSL_ROOT_DIR}")
+else()
+  message(STATUS "OpenSSL found by find_package: ${OPENSSL_VERSION}")
+endif()
 
 add_library(openssl INTERFACE)
 
